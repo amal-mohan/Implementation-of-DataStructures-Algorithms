@@ -49,6 +49,7 @@ public class DFS extends GraphAlgorithm<DFS.DFSVertex> {
         public DFSVertex(Vertex u) {
             seen=false;
             parent=null;
+            int cno=0;
         }
 
         /**
@@ -77,33 +78,54 @@ public class DFS extends GraphAlgorithm<DFS.DFSVertex> {
     public static DFS depthFirstSearch(Graph g) {
         DFS d=new DFS(g);
         //gets list of vertices
-        Iterator<Vertex> gIter=g.iterator();
-        while(gIter.hasNext()){
-            Vertex u = gIter.next();
-            //visit each vertex that is not seen earlier
-            if (!d.seen(u)){
-                DFSVisit(u,d);
-            }
-        }
+        Iterator<Vertex> vIter=g.iterator();
+        d.depthFirstSearch(vIter);
         return d;
     }
 
-    /**
-     * inputs a vertex and find all vertices starting from it
-     * @param u
-     * @param d
-     */
-    public static void DFSVisit(Vertex u,DFS d) {
+    public void depthFirstSearch(Iterator<Vertex> vIter) {
+        int componentNumber=0;
+        while(vIter.hasNext()){
+            Vertex u = vIter.next();
+            //visit each vertex that is not seen earlier
+            if (!this.seen(u)){
+                DFSVisit(u,++componentNumber,this);
+            }
+        }
+    }
+
+
+        /**
+         * inputs a vertex and find all vertices starting from it
+         * @param u
+         * @param d
+         */
+    public static void DFSVisit(Vertex u,int componentNumber,DFS d) {
         d.setSeen(u,true);
+        d.setCno(u,componentNumber);
         for (Edge e : d.g.incident(u)){
-            if(d.seen(e.toVertex()) && !d.finishList.contains(e.toVertex()))
+            if(d.seen(e.otherEnd(u)) && !d.finishList.contains(e.otherEnd(u)))
                 d.setHasCycle(true);
-            if (!d.seen(e.toVertex())){
-                d.setParent(e.toVertex(),u);
-                DFSVisit(e.toVertex(),d);
+            if (!d.seen(e.otherEnd(u))){
+                d.setParent(e.otherEnd(u),u);
+                DFSVisit(e.otherEnd(u),componentNumber,d);
             }
         }
         d.finishList.addFirst(u);
+    }
+
+    public static DFS stronglyConnectedComponents(Graph g) {
+        DFS d=depthFirstSearch(g);
+//        g.printGraph(false);
+        List<Vertex> fList=d.getFinishList();
+//        printSCC(d);
+        g.reverseGraph();
+//        g.printGraph(false);
+        DFS d1=new DFS(g);
+        Iterator<Vertex> vertexListIterator=fList.listIterator();
+        d1.depthFirstSearch(vertexListIterator);
+        g.reverseGraph();
+        return d1;
     }
 
     /**
@@ -119,12 +141,21 @@ public class DFS extends GraphAlgorithm<DFS.DFSVertex> {
         return d.finishList;
     }
 
+    public List<Vertex> getFinishList(){
+        return finishList;
+    }
+
     /**
      * setter method for has cycle
      * @param hasCycle
      */
     public void setHasCycle(boolean hasCycle){
         this.hasCycle=hasCycle;
+    }
+
+
+    public void setCno(Vertex u,int compno){
+       this.get(u).cno=compno;
     }
 
     /**
@@ -169,34 +200,35 @@ public class DFS extends GraphAlgorithm<DFS.DFSVertex> {
         return null;
     }
 
+    public static void printSCC(DFS d){
+        int compno=0;
+        System.out.println("Strongly Connected Components are");
+        for(Vertex u:d.getFinishList()) {
+            if (d.cno(u) != compno) {
+                System.out.println();
+                compno = d.cno(u);
+            }
+            System.out.print(u + " ");
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         String DAG = "7 8   1 2 2   1 3 3   2 4 5   3 4 4   4 5 1   1 5 7   6 7 1   7 1 0";
         String notDAG = "7 8   1 2 2   1 3 3   2 4 5   3 4 4   4 5 1   5 1 7   6 7 1   7 6 1 0";
+        String exampleDAG="11 17  5 4 1  5 7 1  5 8 1  4 9 1  4 1 1  9 11 1  1 11 1  11 4 1  7 8 1  8 2 1  2 7 1  2 3 1  11 3 1  3 10 1  10 6 1  6 3 1  11 6 1";
 
         Scanner in;
         // If there is a command line argument, use it as file from which
         // input is read, otherwise use input from string.
         in = args.length > 0 ? new Scanner(new File(args[0])) : new Scanner(
-                DAG);
+                exampleDAG);
 
         // Read graph from input
         Graph g = Graph.readGraph(in,true);
         g.printGraph(false);
 
-        DFS d = new DFS(g);
-        // int numcc = d.connectedComponents();
-        // System.out.println("Number of components: " + numcc + "\nu\tcno");
-        // for(Vertex u: g) {
-        // System.out.println(u + "\t" + d.cno(u));
-        // }
 
-        List<Vertex> topOrder = d.topologicalOrder1();
-        System.out.println("Topological Order = " + topOrder);
-        if(topOrder!=null){
-            java.util.Iterator<Vertex> itTopOrrder = topOrder.iterator();
-            while (itTopOrrder.hasNext())
-                System.out.println(itTopOrrder.next());
-
-        }
+        DFS d=stronglyConnectedComponents(g);
+        printSCC(d);
     }
 }

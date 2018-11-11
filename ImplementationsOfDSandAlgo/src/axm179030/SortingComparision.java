@@ -1,7 +1,7 @@
 /** Author: Amal Mohan - axm179030
  Anki Chauhan - axc170043
 
- axm179030\SortingComparision.java consists of the implementation of sorting algorithms
+ axm179030\SortingComparisionjava consists of the implementation of sorting algorithms
 
  axm179030\report.txt has the analysis of runtime of the algorithms
 
